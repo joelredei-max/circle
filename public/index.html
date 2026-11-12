@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>THE CIRCLE</title>
+  <meta name="description" content="Nights built for the dancefloor. Tickets, events, gallery and more." />
+  <meta name="theme-color" content="#000000" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="is-loading">
+
+  <!-- AMBIENT LIVING BACKGROUND CANVAS -->
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+  <!-- INTRO / KINETIC PRELOADER -->
+  <div id="intro" aria-label="Loading">
+    <video id="introVideo" muted playsinline preload="auto" hidden></video>
+    <canvas id="introCanvas"></canvas>
+    <div class="intro-center">
+      <div class="ring-wrap">
+        <div class="ring ring-outer"></div>
+        <div class="ring ring-inner"></div>
+        <div class="ring-core"></div>
+      </div>
+      <div class="intro-wordmark" aria-hidden="true">
+        <span class="word-mask"><span>THE</span></span>
+        <span class="word-mask"><span>CIRCLE</span></span>
+      </div>
+      <div class="intro-sub">ENTER THE NIGHT</div>
+    </div>
+    <button id="introSkip" type="button">Skip ↗</button>
+  </div>
+
+  <!-- SPATIAL ROUTE TRANSITION VEIL -->
+  <div id="routeVeil" aria-hidden="true"></div>
+
+  <div id="progress"></div>
+  <div id="glow"></div>
+  <div class="noise"></div>
+
+  <header id="nav">
+    <a href="/" data-link class="logo" aria-label="Home">THE CIRCLE</a>
+    <nav id="menu">
+      <a href="/" data-link data-route="home">Home</a>
+      <a href="/events" data-link data-route="events">Events</a>
+      <a href="/tickets" data-link data-route="tickets">Tickets</a>
+      <a href="/gallery" data-link data-route="gallery">Gallery</a>
+      <a href="/information" data-link data-route="information">Information</a>
+      <a href="/support" data-link data-route="support">Support</a>
+    </nav>
+    <a href="/tickets" data-link class="nav-cta">Get tickets ↗</a>
+    <button id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer id="footer">
+    <div class="foot-top">
+      <div class="foot-links">
+        <a href="/events" data-link>Events</a>
+        <a href="/tickets" data-link>Tickets</a>
+        <a href="/gallery" data-link>Gallery</a>
+        <a href="/information" data-link>Information</a>
+        <a href="/support" data-link>Support</a>
+      </div>
+      <p>18+ only · Drink responsibly · © <span id="year"></span> THE CIRCLE</p>
+    </div>
+    <div class="foot-mark" aria-hidden="true">THE CIRCLE</div>
+  </footer>
+
+  <div id="lightbox" hidden>
+    <button id="lbClose" aria-label="Close">✕</button>
+    <button id="lbPrev" aria-label="Previous">‹</button>
+    <div id="lbStage"></div>
+    <button id="lbNext" aria-label="Next">›</button>
+  </div>
+
+  <div id="toast" role="status"></div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

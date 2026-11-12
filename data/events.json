@@ -1,0 +1,42 @@
+[
+  {
+    "id": "neon-nights",
+    "title": "NEON NIGHTS",
+    "date": "2026-12-05T21:00:00",
+    "venue": "The Warehouse",
+    "city": "Your City",
+    "tag": "Next up",
+    "lineup": ["DJ Voltage", "MC Blaze", "Luna Wave", "KID STATIC"],
+    "description": "Blacklight chaos, confetti cannons and a four-hour non-stop bass set. Dress in neon or don't bother."
+  },
+  {
+    "id": "new-years-meltdown",
+    "title": "NEW YEAR'S MELTDOWN",
+    "date": "2026-12-31T22:00:00",
+    "venue": "Rooftop Arena",
+    "city": "Your City",
+    "tag": "Limited",
+    "lineup": ["Aria Flux", "DJ Voltage", "The Hype Crew"],
+    "description": "Count down 2027 with fireworks, a giant LED wall and a midnight surprise drop."
+  },
+  {
+    "id": "foam-frenzy",
+    "title": "FOAM FRENZY",
+    "date": "2027-02-13T20:00:00",
+    "venue": "Club Eclipse",
+    "city": "Your City",
+    "tag": "Coming soon",
+    "lineup": ["Luna Wave", "KID STATIC", "Surprise Guest"],
+    "description": "Knee-deep foam, wild lights and the loudest sound system in town."
+  },
+  {
+    "id": "summer-blowout",
+    "title": "SUMMER BLOWOUT",
+    "date": "2027-07-10T16:00:00",
+    "venue": "Lakeside Grounds",
+    "city": "Your City",
+    "tag": "Early access",
+    "lineup": ["To be announced"],
+    "description": "Our biggest outdoor party yet. Two stages, food trucks and sunrise sets."
+  }
+]

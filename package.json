@@ -1,0 +1,12 @@
+{
+  "name": "party-site",
+  "version": "1.0.0",
+  "description": "Party website with tickets, events, gallery, info and support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

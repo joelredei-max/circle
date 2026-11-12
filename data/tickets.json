@@ -1,0 +1,24 @@
+[
+  {
+    "id": "general",
+    "name": "GENERAL ENTRY",
+    "price": 20,
+    "stock": 300,
+    "perks": ["Entry to the main floor", "Free welcome shot", "Coat check discount"]
+  },
+  {
+    "id": "vip",
+    "name": "VIP",
+    "price": 55,
+    "stock": 80,
+    "featured": true,
+    "perks": ["Fast-track entry", "VIP lounge and private bar", "2 free drinks", "Best view of the stage"]
+  },
+  {
+    "id": "backstage",
+    "name": "BACKSTAGE PASS",
+    "price": 120,
+    "stock": 20,
+    "perks": ["Everything in VIP", "Meet the DJs", "Backstage area access", "Limited edition merch"]
+  }
+]
