@@ -1,13 +1,52 @@
-// Party website server - zero dependencies, just Node.js built-ins.
-// Run:  node server.js   then open http://localhost:3000
+// Party website server with PostgreSQL database support for Render
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { Pool } = require('pg');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const DATA = path.join(__dirname, 'data');
+
+// PostgreSQL connection setup using Render's DATABASE_URL environment variable
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
+
+// Initialize database tables on startup
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        code TEXT PRIMARY KEY,
+        ticket_id TEXT,
+        ticket_name TEXT,
+        quantity INT,
+        total NUMERIC,
+        name TEXT,
+        email TEXT,
+        created_at TEXT
+      );
+      CREATE TABLE IF NOT EXISTS support_messages (
+        ref TEXT PRIMARY KEY,
+        name TEXT,
+        email TEXT,
+        topic TEXT,
+        message TEXT,
+        created_at TEXT
+      );
+      CREATE TABLE IF NOT EXISTS subscribers (
+        email TEXT PRIMARY KEY
+      );
+    `);
+    console.log('  Database tables initialized successfully.');
+  } catch (err) {
+    console.error('  Database initialization error (falling back to local files if needed):', err.message);
+  }
+}
+initDB();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -67,16 +106,22 @@ async function handleApi(req, res, pathname) {
     return send(res, 200, readJSON('events.json', []));
   }
 
-  // Ticket types (with live remaining stock)
+  // Ticket types (with live remaining stock from DB or JSON)
   if (req.method === 'GET' && pathname === '/api/tickets') {
     const tickets = readJSON('tickets.json', []);
-    const orders = readJSON('orders.json', []);
+    let orders = [];
+    try {
+      const dbRes = await pool.query('SELECT ticket_id as "ticketId", quantity FROM orders');
+      orders = dbRes.rows;
+    } catch {
+      orders = readJSON('orders.json', []);
+    }
     const sold = {};
     orders.forEach((o) => { sold[o.ticketId] = (sold[o.ticketId] || 0) + o.quantity; });
     return send(res, 200, tickets.map((t) => ({ ...t, remaining: Math.max(0, t.stock - (sold[t.id] || 0)) })));
   }
 
-  // Buy tickets (reservation - hook up a real payment provider here)
+  // Buy tickets
   if (req.method === 'POST' && pathname === '/api/orders') {
     const b = await readBody(req);
     const name = clean(b.name, 80);
@@ -87,11 +132,20 @@ async function handleApi(req, res, pathname) {
     if (!name || !validEmail(email) || !ticket || !(quantity >= 1 && quantity <= 10)) {
       return send(res, 400, { error: 'Please fill in every field correctly.' });
     }
-    const orders = readJSON('orders.json', []);
+
+    let orders = [];
+    try {
+      const dbRes = await pool.query('SELECT ticket_id as "ticketId", quantity FROM orders');
+      orders = dbRes.rows;
+    } catch {
+      orders = readJSON('orders.json', []);
+    }
+
     const soldNow = orders.filter((o) => o.ticketId === ticket.id).reduce((a, o) => a + o.quantity, 0);
     if (soldNow + quantity > ticket.stock) {
       return send(res, 409, { error: 'Not enough tickets left for that tier.' });
     }
+
     const order = {
       code: 'PX-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
       ticketId: ticket.id,
@@ -102,8 +156,19 @@ async function handleApi(req, res, pathname) {
       email,
       createdAt: new Date().toISOString(),
     };
-    orders.push(order);
-    writeJSON('orders.json', orders);
+
+    try {
+      await pool.query(
+        'INSERT INTO orders (code, ticket_id, ticket_name, quantity, total, name, email, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [order.code, order.ticketId, order.ticketName, order.quantity, order.total, order.name, order.email, order.createdAt]
+      );
+    } catch (err) {
+      // Fallback to local json if DB fails
+      const localOrders = readJSON('orders.json', []);
+      localOrders.push(order);
+      writeJSON('orders.json', localOrders);
+    }
+
     return send(res, 201, order);
   }
 
@@ -117,10 +182,20 @@ async function handleApi(req, res, pathname) {
     if (!name || !validEmail(email) || message.length < 5) {
       return send(res, 400, { error: 'Please fill in your name, a valid email and a message.' });
     }
-    const list = readJSON('support.json', []);
     const ref = 'SUP-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-    list.push({ ref, name, email, topic, message, createdAt: new Date().toISOString() });
-    writeJSON('support.json', list);
+    const createdAt = new Date().toISOString();
+
+    try {
+      await pool.query(
+        'INSERT INTO support_messages (ref, name, email, topic, message, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+        [ref, name, email, topic, message, createdAt]
+      );
+    } catch {
+      const list = readJSON('support.json', []);
+      list.push({ ref, name, email, topic, message, createdAt });
+      writeJSON('support.json', list);
+    }
+
     return send(res, 201, { ok: true, ref });
   }
 
@@ -129,19 +204,25 @@ async function handleApi(req, res, pathname) {
     const b = await readBody(req);
     const email = clean(b.email, 120);
     if (!validEmail(email)) return send(res, 400, { error: 'Enter a valid email.' });
-    const list = readJSON('subscribers.json', []);
-    if (!list.includes(email)) { list.push(email); writeJSON('subscribers.json', list); }
+
+    try {
+      await pool.query('INSERT INTO subscribers (email) VALUES ($1) ON CONFLICT (email) DO NOTHING', [email]);
+    } catch {
+      const list = readJSON('subscribers.json', []);
+      if (!list.includes(email)) { list.push(email); writeJSON('subscribers.json', list); }
+    }
+
     return send(res, 201, { ok: true });
   }
 
-  // Gallery: lists any images you drop into /public/gallery
+  // Gallery
   if (req.method === 'GET' && pathname === '/api/gallery') {
     const dir = path.join(PUBLIC, 'gallery');
     const files = fs.readdirSync(dir).filter((f) => /\.(jpe?g|png|webp|gif|mp4|webm)$/i.test(f)).sort();
     return send(res, 200, files.map((f) => ({ src: '/gallery/' + encodeURIComponent(f), type: /\.(mp4|webm)$/i.test(f) ? 'video' : 'image' })));
   }
 
-  // Does an intro video exist?
+  // Intro video
   if (req.method === 'GET' && pathname === '/api/intro') {
     const dir = path.join(PUBLIC, 'media');
     const file = ['intro.mp4', 'intro.webm'].find((f) => fs.existsSync(path.join(dir, f)));
@@ -151,14 +232,13 @@ async function handleApi(req, res, pathname) {
   return send(res, 404, { error: 'Not found' });
 }
 
-// ---------- Static files (with range support for video) ----------
+// ---------- Static files ----------
 function serveStatic(req, res, pathname) {
   let filePath = path.normalize(path.join(PUBLIC, decodeURIComponent(pathname)));
   if (!filePath.startsWith(PUBLIC)) return send(res, 403, 'Forbidden', 'text/plain');
 
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
-      // SPA fallback: any non-file route returns index.html (client router handles it)
       if (path.extname(pathname)) return send(res, 404, 'Not found', 'text/plain');
       filePath = path.join(PUBLIC, 'index.html');
       return fs.readFile(filePath, (e, buf) => (e ? send(res, 500, 'Error', 'text/plain') : send(res, 200, buf, MIME['.html'])));
